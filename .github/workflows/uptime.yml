@@ -1,0 +1,15 @@
+name: Uptime
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+jobs:
+  check:
+    # Only runs once the production URL is configured (repo variable SITE_URL).
+    if: ${{ vars.SITE_URL != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check site is up
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: curl --fail --silent --show-error --location --max-time 20 --output /dev/null "$SITE_URL"

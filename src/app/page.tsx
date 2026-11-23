@@ -1,5 +1,9 @@
-import { PageStub } from "@/components/page-stub";
-import { ScrollRevealDemo } from "@/components/scroll-reveal-demo";
+import { CtaBand } from "@/components/cta-band";
+import { Hero } from "@/components/home/hero";
+import { Marquee } from "@/components/home/marquee";
+import { PricingTeaser } from "@/components/home/pricing-teaser";
+import { Process } from "@/components/home/process";
+import { ServicesGrid } from "@/components/home/services-grid";
 import { pageMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
 
@@ -12,10 +16,12 @@ export const metadata = pageMetadata(
 export default function HomePage() {
   return (
     <>
-      <PageStub title={siteConfig.name} />
-      <section className="mx-auto max-w-6xl px-6 pt-[60vh] pb-[40vh]">
-        <ScrollRevealDemo />
-      </section>
+      <Hero />
+      <Marquee />
+      <ServicesGrid />
+      <Process />
+      <PricingTeaser />
+      <CtaBand />
     </>
   );
 }
