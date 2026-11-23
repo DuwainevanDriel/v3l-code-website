@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
 import { OrganizationJsonLd } from "@/components/json-ld";
 import { MotionProvider } from "@/components/motion-provider";
 import { MOTION_STORAGE_KEY } from "@/lib/motion";
@@ -61,11 +59,7 @@ export default function RootLayout({
           Skip to content
         </a>
         <OrganizationJsonLd />
-        <MotionProvider>
-          <Header />
-          <main id="main">{children}</main>
-          <Footer />
-        </MotionProvider>
+        <MotionProvider>{children}</MotionProvider>
       </body>
     </html>
   );
