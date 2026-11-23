@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type PointerEvent } from "react";
 import { Reveal } from "@/components/reveal";
-import { services } from "@/lib/site";
+import { serviceHref, services } from "@/lib/site";
 
 export function ServicesGrid() {
   const onMove = (e: PointerEvent<HTMLElement>) => {
@@ -31,7 +31,7 @@ export function ServicesGrid() {
               className={i === 0 ? "md:col-span-4" : "md:col-span-2"}
             >
               <Link
-                href={s.href}
+                href={serviceHref(s.slug)}
                 onPointerMove={onMove}
                 className="card-spotlight group border-border hover:border-accent-2 flex h-full min-h-44 flex-col justify-between rounded-lg border p-6 transition-colors"
               >
