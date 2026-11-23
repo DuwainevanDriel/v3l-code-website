@@ -1,9 +1,11 @@
 import { ButtonLink } from "@/components/button";
 import { CtaBand } from "@/components/cta-band";
+import { JsonLd } from "@/components/json-ld";
 import { PageHero } from "@/components/page-hero";
 import { Reveal } from "@/components/reveal";
 import { pageMetadata } from "@/lib/metadata";
 import { faqs, plans } from "@/lib/pricing";
+import { breadcrumbData, faqData } from "@/lib/structured-data";
 
 export const metadata = pageMetadata(
   "Pricing",
@@ -14,6 +16,8 @@ export const metadata = pageMetadata(
 export default function PricingPage() {
   return (
     <>
+      <JsonLd data={faqData} />
+      <JsonLd data={breadcrumbData([{ name: "Pricing", path: "/pricing" }])} />
       <PageHero
         eyebrow="Pricing"
         title="Simple, honest pricing."

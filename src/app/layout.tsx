@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Analytics } from "@/components/analytics";
+import { ConsentBanner } from "@/components/consent-banner";
 import { OrganizationJsonLd } from "@/components/json-ld";
 import { MotionProvider } from "@/components/motion-provider";
+import { consentDefaultsScript } from "@/lib/analytics";
 import { MOTION_STORAGE_KEY } from "@/lib/motion";
 import { siteConfig } from "@/lib/site";
 import "./globals.css";
@@ -33,6 +36,9 @@ export const metadata: Metadata = {
     url: "/",
   },
   twitter: { card: "summary_large_image" },
+  verification: siteConfig.googleVerification
+    ? { google: siteConfig.googleVerification }
+    : undefined,
 };
 
 export const viewport: Viewport = { themeColor: "#0b0d12" };
@@ -50,6 +56,9 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: motionInit }} />
+        {siteConfig.gtmId ? (
+          <script dangerouslySetInnerHTML={{ __html: consentDefaultsScript }} />
+        ) : null}
       </head>
       <body className="min-h-screen antialiased">
         <a
@@ -60,6 +69,8 @@ export default function RootLayout({
         </a>
         <OrganizationJsonLd />
         <MotionProvider>{children}</MotionProvider>
+        <ConsentBanner enabled={Boolean(siteConfig.gtmId)} />
+        <Analytics gtmId={siteConfig.gtmId} />
       </body>
     </html>
   );

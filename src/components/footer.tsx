@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { siteConfig } from "@/lib/site";
+import { CookieSettings } from "./cookie-settings";
 import { MotionToggle } from "./motion-toggle";
 
 export function Footer() {
@@ -17,6 +18,14 @@ export function Footer() {
           >
             {siteConfig.email}
           </a>
+          {siteConfig.phone ? (
+            <a
+              href={`tel:${siteConfig.phone}`}
+              className="text-accent block min-h-11 py-3 underline-offset-4 hover:underline"
+            >
+              {siteConfig.phone}
+            </a>
+          ) : null}
         </div>
         <nav aria-label="Footer">
           <p className="text-eyebrow">Explore</p>
@@ -57,7 +66,10 @@ export function Footer() {
       </div>
       <div className="border-border text-muted mx-auto flex max-w-[1200px] flex-col gap-2 border-t px-4 py-4 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
         <p>&copy; {siteConfig.name}. All rights reserved.</p>
-        <MotionToggle />
+        <div className="flex flex-wrap gap-x-6">
+          {siteConfig.gtmId ? <CookieSettings /> : null}
+          <MotionToggle />
+        </div>
       </div>
     </footer>
   );

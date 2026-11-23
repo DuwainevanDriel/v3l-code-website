@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
 import { CtaBand } from "@/components/cta-band";
 import { PageHero } from "@/components/page-hero";
 import { Reveal } from "@/components/reveal";
 import { pageMetadata } from "@/lib/metadata";
 import { serviceHref, services } from "@/lib/site";
+import { breadcrumbData, serviceData } from "@/lib/structured-data";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -27,6 +29,13 @@ export default async function ServicePage({ params }: Props) {
 
   return (
     <>
+      <JsonLd data={serviceData(service)} />
+      <JsonLd
+        data={breadcrumbData([
+          { name: "Services", path: "/services" },
+          { name: service.title, path: serviceHref(service.slug) },
+        ])}
+      />
       <PageHero
         eyebrow={service.title}
         title={service.headline}
