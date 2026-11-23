@@ -1,24 +1,6 @@
 import { ButtonLink } from "@/components/button";
 import { Reveal } from "@/components/reveal";
-
-const plans = [
-  {
-    name: "Starter site",
-    price: "£X",
-    note: "A fast, polished site to get you online.",
-  },
-  {
-    name: "Growth",
-    price: "£X",
-    note: "Custom site or app with integrations.",
-    featured: true,
-  },
-  {
-    name: "Hosting",
-    price: "£X/mo",
-    note: "Managed hosting, backups and monitoring.",
-  },
-] as const;
+import { plans } from "@/lib/pricing";
 
 export function PricingTeaser() {
   return (
@@ -30,7 +12,7 @@ export function PricingTeaser() {
         </div>
         <ul className="mt-12 grid gap-4 md:grid-cols-3">
           {plans.map((p) => {
-            const featured = "featured" in p;
+            const featured = Boolean(p.featured);
             return (
               <li
                 key={p.name}
@@ -45,6 +27,7 @@ export function PricingTeaser() {
                 <p className="mt-4 font-mono text-4xl font-medium">
                   <span className="text-muted text-sm">from </span>
                   {p.price}
+                  {p.unit}
                 </p>
                 <p className="text-muted mt-2">{p.note}</p>
               </li>
