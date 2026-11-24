@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ContactForm } from "@/components/contact/contact-form";
+import { JsonLd } from "@/components/json-ld";
 import { PageHero } from "@/components/page-hero";
 import { pageMetadata } from "@/lib/metadata";
+import { breadcrumbData } from "@/lib/structured-data";
 import { siteConfig } from "@/lib/site";
 
 export const metadata = pageMetadata(
@@ -13,6 +15,7 @@ export const metadata = pageMetadata(
 export default function ContactPage() {
   return (
     <>
+      <JsonLd data={breadcrumbData([{ name: "Contact", path: "/contact" }])} />
       <PageHero
         eyebrow="Contact"
         title="Tell us what you're building."
@@ -30,6 +33,17 @@ export default function ContactPage() {
               {siteConfig.email}
             </a>
           </p>
+          {siteConfig.phone ? (
+            <p>
+              Call us:{" "}
+              <a
+                className="text-accent underline"
+                href={`tel:${siteConfig.phone}`}
+              >
+                {siteConfig.phone}
+              </a>
+            </p>
+          ) : null}
           <p>
             We only use your details to reply to your enquiry. See our{" "}
             <Link className="text-accent underline" href="/privacy">

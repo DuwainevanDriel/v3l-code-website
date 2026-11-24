@@ -24,9 +24,10 @@ npm run build
 
 ## Environment
 
-| Variable               | Purpose                                                 | Default               |
-| ---------------------- | ------------------------------------------------------- | --------------------- |
-| `NEXT_PUBLIC_SITE_URL` | Canonical origin for metadata, sitemap, robots, JSON-LD | `https://v3lcode.com` |
+| Variable                                                                  | Purpose                                                                           | Default               |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------- |
+| `NEXT_PUBLIC_SITE_URL`                                                    | Canonical origin for metadata, sitemap, robots, JSON-LD                           | `https://v3lcode.com` |
+| `NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_GSC_VERIFICATION`, `NEXT_PUBLIC_PHONE` | Optional analytics, Search Console and click-to-call. See `docs/seo-analytics.md` | unset                 |
 
 ## Structure
 

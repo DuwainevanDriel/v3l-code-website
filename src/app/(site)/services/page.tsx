@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { CtaBand } from "@/components/cta-band";
+import { JsonLd } from "@/components/json-ld";
 import { PageHero } from "@/components/page-hero";
 import { Reveal } from "@/components/reveal";
 import { pageMetadata } from "@/lib/metadata";
+import { breadcrumbData } from "@/lib/structured-data";
 import { serviceHref, services } from "@/lib/site";
 
 export const metadata = pageMetadata(
@@ -14,6 +16,9 @@ export const metadata = pageMetadata(
 export default function ServicesPage() {
   return (
     <>
+      <JsonLd
+        data={breadcrumbData([{ name: "Services", path: "/services" }])}
+      />
       <PageHero
         eyebrow="Services"
         title="Build, launch and run it all in one place."

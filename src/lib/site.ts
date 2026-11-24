@@ -7,6 +7,12 @@ export const siteConfig = {
     "",
   ),
   email: "hello@v3lcode.com",
+  /** Optional, E.164 (e.g. +27211234567). Enables click-to-call links. */
+  phone: process.env.NEXT_PUBLIC_PHONE,
+  /** Optional Google Tag Manager container id (GTM-XXXXXXX). */
+  gtmId: process.env.NEXT_PUBLIC_GTM_ID,
+  /** Optional Search Console HTML-tag verification token. */
+  googleVerification: process.env.NEXT_PUBLIC_GSC_VERIFICATION,
   nav: [
     { href: "/", label: "Home" },
     { href: "/services", label: "Services" },

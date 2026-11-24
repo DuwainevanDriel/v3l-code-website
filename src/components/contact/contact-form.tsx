@@ -9,6 +9,7 @@ import {
   limits,
   serviceOptions,
 } from "@/lib/contact";
+import { track } from "@/lib/analytics";
 import { siteConfig } from "@/lib/site";
 
 declare global {
@@ -59,7 +60,9 @@ export function ContactForm({
 
   useEffect(() => {
     if (state.status === "error") window.turnstile?.reset();
-  }, [state]);
+    if (state.status === "success")
+      track({ event: "generate_lead", form_source: source || "contact" });
+  }, [state, source]);
 
   if (state.status === "success") {
     return (

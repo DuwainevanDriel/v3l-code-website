@@ -1,7 +1,9 @@
 import { CtaBand } from "@/components/cta-band";
+import { JsonLd } from "@/components/json-ld";
 import { PageHero } from "@/components/page-hero";
 import { Reveal } from "@/components/reveal";
 import { pageMetadata } from "@/lib/metadata";
+import { breadcrumbData } from "@/lib/structured-data";
 
 export const metadata = pageMetadata(
   "About",
@@ -27,6 +29,7 @@ const values = [
 export default function AboutPage() {
   return (
     <>
+      <JsonLd data={breadcrumbData([{ name: "About", path: "/about" }])} />
       <PageHero
         eyebrow="About"
         title="A small team that builds and runs your software."

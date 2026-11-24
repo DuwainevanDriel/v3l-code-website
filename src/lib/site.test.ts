@@ -26,3 +26,11 @@ describe("services data", () => {
     }
   });
 });
+
+describe("sitemap legal pages", () => {
+  it("includes privacy and terms", () => {
+    const urls = sitemap().map((e) => e.url);
+    expect(urls).toContain(`${siteConfig.url}/privacy`);
+    expect(urls).toContain(`${siteConfig.url}/terms`);
+  });
+});

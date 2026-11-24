@@ -1,14 +1,7 @@
-import { siteConfig } from "@/lib/site";
+import { organizationData } from "@/lib/structured-data";
 
-export function OrganizationJsonLd() {
-  const data = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: siteConfig.name,
-    url: siteConfig.url,
-    description: siteConfig.description,
-    logo: `${siteConfig.url}/icon.svg`,
-  };
+/** Renders one JSON-LD block. `<` is escaped so content can never close the script tag. */
+export function JsonLd({ data }: { data: object }) {
   return (
     <script
       type="application/ld+json"
@@ -17,4 +10,8 @@ export function OrganizationJsonLd() {
       }}
     />
   );
+}
+
+export function OrganizationJsonLd() {
+  return <JsonLd data={organizationData} />;
 }
