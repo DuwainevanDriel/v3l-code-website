@@ -27,22 +27,28 @@ export default async function LandingPage({ params }: Props) {
   if (!found) notFound();
 
   return (
-    <section className="hero-glow mx-auto grid max-w-[1200px] gap-12 px-4 pt-8 pb-24 sm:px-8 md:grid-cols-2 md:pt-16 lg:px-12">
-      <div>
-        <h1 className="text-display">{found.headline}</h1>
-        <p className="text-muted mt-6 text-lg">{found.intro}</p>
-        <ul className="mt-8 space-y-3">
-          {found.points.map((p) => (
-            <li key={p} className="flex gap-3">
-              <span aria-hidden="true" className="text-accent">
-                ✓
-              </span>
-              <span>{p}</span>
-            </li>
-          ))}
-        </ul>
+    <section className="relative overflow-hidden">
+      <div
+        aria-hidden="true"
+        className="hero-glow pointer-events-none absolute inset-0"
+      />
+      <div className="relative mx-auto grid max-w-[1200px] gap-12 px-4 pt-8 pb-24 sm:px-8 md:grid-cols-2 md:pt-16 lg:px-12">
+        <div>
+          <h1 className="text-display">{found.headline}</h1>
+          <p className="text-muted mt-6 text-lg">{found.intro}</p>
+          <ul className="mt-8 space-y-3">
+            {found.points.map((p) => (
+              <li key={p} className="flex gap-3">
+                <span aria-hidden="true" className="text-accent">
+                  ✓
+                </span>
+                <span>{p}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <ContactForm source={found.slug} />
       </div>
-      <ContactForm source={found.slug} />
     </section>
   );
 }
