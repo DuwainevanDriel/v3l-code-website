@@ -4,6 +4,7 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ButtonLink } from "@/components/button";
+import { HeroScene } from "@/components/home/hero-scene";
 import { Magnetic } from "@/components/magnetic";
 import { whenMotionAllowed } from "@/lib/motion";
 
@@ -72,6 +73,7 @@ export function Hero() {
             Explore services →
           </ButtonLink>
         </div>
+        <HeroScene />
       </div>
     </section>
   );
