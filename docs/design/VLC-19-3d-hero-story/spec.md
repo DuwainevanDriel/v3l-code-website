@@ -36,13 +36,13 @@ flowchart TD
 
 Master timeline T = 10.5 s, built once in GSAP (`gsap.timeline({paused:true})`); the canvas reads `timeline.progress()` each frame. The same timeline serves autoplay, scroll-skip and rail jumps.
 
-| # | Beat | Time | Trigger | What happens | Easing |
-|---|------|------|---------|--------------|--------|
-| 1 | **Write** | 0.0–3.0 s | Autoplay when canvas is ready and hero ≥50% visible | A code editor panel (glass panel, `rounded-2xl`, `border white/15`) types a 7-line snippet at ~45 chars/s with ±25% jitter. Blinking caret 1 Hz (steady, not blinking, under reduced motion). | `none` (linear, jittered) |
-| 2 | **Build** | 3.0–5.0 s | Autoplay (follows 1) | Each token/line detaches from the text, shrinks and morphs into a small glass cube (≈24 cubes). Editor panel fades to 0 over 0.6 s. Cubes hover in a loose cloud, brief shimmer sweep on their edges. | `power3.out`, stagger 0.04 s |
-| 3 | **Flow** | 5.0–7.5 s | Autoplay; **scroll-skippable** | Cubes align and travel single-file along 3 glowing pipes (white core, soft halo) across a chip-like base plate. Light pulses run along the pipes (dash offset). | cubes `sine.inOut`; pulses `none` |
-| 4 | **Ship** | 7.5–10.0 s | Autoplay; **scroll-skippable** | Cubes arrive at the end of the pipes and unfold into a product UI: sidebar, top bar, 3 stat cards, bar chart. Panels are glass, edges draw in, then a one-time light sweep. | `expo.out`, slight `back.out(1.2)` on panel scale |
-| 5 | **Live** (idle) | 10.0 s → ∞ | Autoplay completes → interactive | Product UI floats (±4 px, 6 s sine yoyo). Pipes keep a slow ambient pulse (1 per 3 s). Pointer tilt, hover highlight and click are enabled. Render loop drops to 30 fps when no pointer movement for 5 s. | `sine.inOut` yoyo |
+| #   | Beat            | Time       | Trigger                                             | What happens                                                                                                                                                                                              | Easing                                            |
+| --- | --------------- | ---------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| 1   | **Write**       | 0.0–3.0 s  | Autoplay when canvas is ready and hero ≥50% visible | A code editor panel (glass panel, `rounded-2xl`, `border white/15`) types a 7-line snippet at ~45 chars/s with ±25% jitter. Blinking caret 1 Hz (steady, not blinking, under reduced motion).             | `none` (linear, jittered)                         |
+| 2   | **Build**       | 3.0–5.0 s  | Autoplay (follows 1)                                | Each token/line detaches from the text, shrinks and morphs into a small glass cube (≈24 cubes). Editor panel fades to 0 over 0.6 s. Cubes hover in a loose cloud, brief shimmer sweep on their edges.     | `power3.out`, stagger 0.04 s                      |
+| 3   | **Flow**        | 5.0–7.5 s  | Autoplay; **scroll-skippable**                      | Cubes align and travel single-file along 3 glowing pipes (white core, soft halo) across a chip-like base plate. Light pulses run along the pipes (dash offset).                                           | cubes `sine.inOut`; pulses `none`                 |
+| 4   | **Ship**        | 7.5–10.0 s | Autoplay; **scroll-skippable**                      | Cubes arrive at the end of the pipes and unfold into a product UI: sidebar, top bar, 3 stat cards, bar chart. Panels are glass, edges draw in, then a one-time light sweep.                               | `expo.out`, slight `back.out(1.2)` on panel scale |
+| 5   | **Live** (idle) | 10.0 s → ∞ | Autoplay completes → interactive                    | Product UI floats (±4 px, 6 s sine yoyo). Pipes keep a slow ambient pulse (1 per 3 s). Pointer tilt, hover highlight and click are enabled. Render loop drops to 30 fps when no pointer movement for 5 s. | `sine.inOut` yoyo                                 |
 
 Caption row under the canvas (Geist Mono, `text-xs`, `opacity-80`, one visible at a time): `01 Write` · `02 Build` · `03 Flow` · `04 Ship` · `Live`. Changes with a 200 ms crossfade.
 
@@ -94,66 +94,66 @@ Reserve canvas space with `aspect-ratio` so CLS = 0 (poster and canvas occupy th
 
 ## 5. Interactions (desktop fine pointer unless stated)
 
-| Interaction | Behaviour |
-|---|---|
-| Parallax tilt | Scene group rotates toward pointer: max ±6° yaw, ±4° pitch; pointer tracked over the whole hero; lerp 0.08/frame; returns to 0 on pointer leave (600 ms `power2.out`). Active in beat 5 and at 30% strength during 3–4. Off for touch. |
-| Hover highlight | Raycast on product panels / cubes (throttled to 30 Hz). Hovered item: edge `white/100`, scale 1.04, glow ×1.5, 150 ms `power2.out`. Panels show a label: **Web**, **Apps**, **Hosting**, **Domains** (decorative; the real service links live in the page below). Cursor stays default (nothing is a link). |
-| Scroll skip | See §3. |
-| Click / tap canvas | During 1–4: skip to beat 5. In beat 5: replay from beat 1 (600 ms fade-through). |
-| Beat rail | 5 ticks under the canvas, each a real `<button>` (44×44 px hit area, visible tick 8 px). Click jumps to that beat (0.8 s scrub). Current beat has `aria-current="step"`. Keyboard: Tab/Enter/Space. |
-| Visibility | Render loop pauses when canvas is <10% visible or tab hidden; resumes at the same playhead. |
+| Interaction        | Behaviour                                                                                                                                                                                                                                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parallax tilt      | Scene group rotates toward pointer: max ±6° yaw, ±4° pitch; pointer tracked over the whole hero; lerp 0.08/frame; returns to 0 on pointer leave (600 ms `power2.out`). Active in beat 5 and at 30% strength during 3–4. Off for touch.                                                                      |
+| Hover highlight    | Raycast on product panels / cubes (throttled to 30 Hz). Hovered item: edge `white/100`, scale 1.04, glow ×1.5, 150 ms `power2.out`. Panels show a label: **Web**, **Apps**, **Hosting**, **Domains** (decorative; the real service links live in the page below). Cursor stays default (nothing is a link). |
+| Scroll skip        | See §3.                                                                                                                                                                                                                                                                                                     |
+| Click / tap canvas | During 1–4: skip to beat 5. In beat 5: replay from beat 1 (600 ms fade-through).                                                                                                                                                                                                                            |
+| Beat rail          | 5 ticks under the canvas, each a real `<button>` (44×44 px hit area, visible tick 8 px). Click jumps to that beat (0.8 s scrub). Current beat has `aria-current="step"`. Keyboard: Tab/Enter/Space.                                                                                                         |
+| Visibility         | Render loop pauses when canvas is <10% visible or tab hidden; resumes at the same playhead.                                                                                                                                                                                                                 |
 
 ## 6. States
 
-| State | Behaviour |
-|---|---|
-| Initial / loading | Headline, CTA and **poster** render immediately (server HTML). 3D chunk requested after `requestIdleCallback` (fallback `setTimeout 1200`) and only if hero ≥50% visible. No spinner. |
-| Ready | Poster → canvas crossfade 300 ms, then beat 1 starts. |
-| Slow / failed load | If the chunk is not ready in 4 s, or WebGL init throws, or `webglcontextlost` fires: stay on / return to poster, silently. No error UI. |
-| Low FPS | Sample 60 frames after start: median <45 fps → drop to Lite; Lite <45 fps → poster. |
-| No JS | Server HTML shows poster + all copy. |
-| Reduced motion | Poster only. No autoplay, tilt, pin, shimmer, caret blink. A text button **Play animation** under the poster (user-initiated) plays beats 1–5 once with cross-fades instead of travel (no pin, no tilt, no flashing). |
-| Save-Data / `(pointer: coarse)` + low memory | Poster only (see tiers). |
-| No permission / empty / error data | N/A (no user data on the hero). |
-| Long / odd content | Headline wraps to 3 lines at 320 px without clipping; CTA labels never truncate (`min-h-12`, `px-6`). |
+| State                                        | Behaviour                                                                                                                                                                                                             |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Initial / loading                            | Headline, CTA and **poster** render immediately (server HTML). 3D chunk requested after `requestIdleCallback` (fallback `setTimeout 1200`) and only if hero ≥50% visible. No spinner.                                 |
+| Ready                                        | Poster → canvas crossfade 300 ms, then beat 1 starts.                                                                                                                                                                 |
+| Slow / failed load                           | If the chunk is not ready in 4 s, or WebGL init throws, or `webglcontextlost` fires: stay on / return to poster, silently. No error UI.                                                                               |
+| Low FPS                                      | Sample 60 frames after start: median <45 fps → drop to Lite; Lite <45 fps → poster.                                                                                                                                   |
+| No JS                                        | Server HTML shows poster + all copy.                                                                                                                                                                                  |
+| Reduced motion                               | Poster only. No autoplay, tilt, pin, shimmer, caret blink. A text button **Play animation** under the poster (user-initiated) plays beats 1–5 once with cross-fades instead of travel (no pin, no tilt, no flashing). |
+| Save-Data / `(pointer: coarse)` + low memory | Poster only (see tiers).                                                                                                                                                                                              |
+| No permission / empty / error data           | N/A (no user data on the hero).                                                                                                                                                                                       |
+| Long / odd content                           | Headline wraps to 3 lines at 320 px without clipping; CTA labels never truncate (`min-h-12`, `px-6`).                                                                                                                 |
 
 **Quality tiers**
 
-| Tier | Who | Settings |
-|---|---|---|
-| A Full | desktop, fine pointer, WebGL2 | DPR ≤1.75, 24 cubes, tilt + hover |
-| B Lite | tablet / touch phones with `deviceMemory ≥ 4`, not Save-Data | DPR ≤1.5, 12 cubes, no tilt/hover, tap to replay |
-| C Poster | everything else, plus all failure paths | static image |
+| Tier     | Who                                                          | Settings                                         |
+| -------- | ------------------------------------------------------------ | ------------------------------------------------ |
+| A Full   | desktop, fine pointer, WebGL2                                | DPR ≤1.75, 24 cubes, tilt + hover                |
+| B Lite   | tablet / touch phones with `deviceMemory ≥ 4`, not Save-Data | DPR ≤1.5, 12 cubes, no tilt/hover, tap to replay |
+| C Poster | everything else, plus all failure paths                      | static image                                     |
 
 ## 7. Copy (exact)
 
-| Element | Text |
-|---|---|
-| h1 | `Code in. Software out.` |
-| Subhead | `V3L Code turns your idea into software, websites and apps, then hosts and runs them for you.` |
-| Primary CTA (→ `/contact`) | `Start a project` |
-| Secondary text link (→ `/services`) | `See our services` |
-| Captions | `01 Write` · `02 Build` · `03 Flow` · `04 Ship` · `Live` |
-| Panel hover labels | `Web` · `Apps` · `Hosting` · `Domains` |
-| Reduced-motion button | `Play animation` |
-| Canvas wrapper | `role="img"`, `aria-label="Animation: code being typed turns into glass cubes that flow through a pipeline and assemble into a finished app."` |
-| Poster `alt` | Same as aria-label, but "Illustration:" instead of "Animation:". |
+| Element                             | Text                                                                                                                                           |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| h1                                  | `Code in. Software out.`                                                                                                                       |
+| Subhead                             | `V3L Code turns your idea into software, websites and apps, then hosts and runs them for you.`                                                 |
+| Primary CTA (→ `/contact`)          | `Start a project`                                                                                                                              |
+| Secondary text link (→ `/services`) | `See our services`                                                                                                                             |
+| Captions                            | `01 Write` · `02 Build` · `03 Flow` · `04 Ship` · `Live`                                                                                       |
+| Panel hover labels                  | `Web` · `Apps` · `Hosting` · `Domains`                                                                                                         |
+| Reduced-motion button               | `Play animation`                                                                                                                               |
+| Canvas wrapper                      | `role="img"`, `aria-label="Animation: code being typed turns into glass cubes that flow through a pipeline and assemble into a finished app."` |
+| Poster `alt`                        | Same as aria-label, but "Illustration:" instead of "Animation:".                                                                               |
 
 SEO note: the h1 changes from the brand name to a tagline. Brand and keywords remain in `<title>`/description. SEO & Marketing should confirm via CTO before build (D2).
 
 ## 8. Palette and visual tokens (existing theme only)
 
-| Use | Token |
-|---|---|
-| Page / canvas background | `black` (canvas is transparent over `bg-black`; no gradient fills) |
-| Cube / panel fill | white, 6–12% alpha |
-| Edges / pipe core | white, 40% idle, 100% on hover or pulse |
-| Glow / halo | white additive, ≤25% alpha |
-| Editor and card border | `white/15` (same as existing cards) |
-| Text | `white`, secondary `opacity-80` |
-| Radius | `rounded-2xl` for editor panel and canvas frame; cube edge bevel is visual only |
-| Fonts | Geist Mono for code and captions, Geist Sans for the rest |
-| Depth | Distance fog fades to black; no drop shadows |
+| Use                      | Token                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| Page / canvas background | `black` (canvas is transparent over `bg-black`; no gradient fills)              |
+| Cube / panel fill        | white, 6–12% alpha                                                              |
+| Edges / pipe core        | white, 40% idle, 100% on hover or pulse                                         |
+| Glow / halo              | white additive, ≤25% alpha                                                      |
+| Editor and card border   | `white/15` (same as existing cards)                                             |
+| Text                     | `white`, secondary `opacity-80`                                                 |
+| Radius                   | `rounded-2xl` for editor panel and canvas frame; cube edge bevel is visual only |
+| Fonts                    | Geist Mono for code and captions, Geist Sans for the rest                       |
+| Depth                    | Distance fog fades to black; no drop shadows                                    |
 
 No new hex values. Contrast: white on black 21:1; lowest code text (`white/55`) ≈ 5.8:1; caption `opacity-80` ≈ 12:1.
 
@@ -162,6 +162,7 @@ No new hex values. Contrast: white on black 21:1; lowest code text (`white/55`) 
 Reuse: container (`max-w-6xl px-6`), button/link styling (the header's `opacity-80 hover:opacity-100`; primary CTA = white fill, black text, `rounded-full`, `min-h-12` — new variant, no primary button exists yet), `MotionProvider` (GSAP/Lenis), `useGSAP` + `gsap.matchMedia()` conventions.
 
 New:
+
 - `Hero` (server component: copy, CTA, poster, reserved aspect box).
 - `HeroScene` (client, `next/dynamic` with `ssr:false`; canvas, timeline, interactions).
 - `BeatRail` (5 buttons + caption).

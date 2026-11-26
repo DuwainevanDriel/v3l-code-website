@@ -29,6 +29,10 @@ npm run build
 | `NEXT_PUBLIC_SITE_URL`                                                    | Canonical origin for metadata, sitemap, robots, JSON-LD                           | `https://v3lcode.com` |
 | `NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_GSC_VERIFICATION`, `NEXT_PUBLIC_PHONE` | Optional analytics, Search Console and click-to-call. See `docs/seo-analytics.md` | unset                 |
 
+## 3D hero
+
+The home hero shows a lazy-loaded three.js scene (`src/components/home/hero-stage.tsx`) behind a static SVG poster (`hero-poster.tsx`). `hero-scene.tsx` decides whether to load it using `src/lib/hero-3d.ts`. See `docs/adr/0001-three-r3f-hero.md`.
+
 ## Structure
 
 - `src/app` routes: `/`, `/about`, `/services`, `/pricing`, `/contact`, plus `sitemap.ts`, `robots.ts`, `opengraph-image.tsx`, `icon.svg`.
