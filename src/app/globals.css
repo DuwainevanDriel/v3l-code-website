@@ -98,13 +98,14 @@ body {
     var(--surface);
 }
 
+/* The track holds 6 identical rows (see marquee.tsx): moving one row's width loops seamlessly. */
 @keyframes marquee {
   to {
-    transform: translateX(-50%);
+    transform: translateX(calc(-100% / 6));
   }
 }
 .marquee-track {
-  animation: marquee 40s linear infinite;
+  animation: marquee 45s linear infinite;
   width: max-content;
 }
 .marquee:hover .marquee-track,

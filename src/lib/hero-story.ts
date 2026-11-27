@@ -1,12 +1,23 @@
-export const STORY_SECONDS = 10.5;
+export const STORY_SECONDS = 12;
 
+/** The software lifecycle, told in five beats plus an endless "Live" idle. */
 export const BEATS = [
-  { key: "write", label: "01 Write", start: 0 },
-  { key: "build", label: "02 Build", start: 3 },
-  { key: "flow", label: "03 Flow", start: 5 },
-  { key: "ship", label: "04 Ship", start: 7.5 },
-  { key: "live", label: "Live", start: 10 },
+  { key: "plan", num: "01", label: "Plan", start: 0 },
+  { key: "code", num: "02", label: "Code", start: 2 },
+  { key: "build", num: "03", label: "Build", start: 4.5 },
+  { key: "test", num: "04", label: "Test", start: 7 },
+  { key: "ship", num: "05", label: "Ship", start: 9 },
+  { key: "live", num: "", label: "Live", start: 11.5 },
 ] as const;
+
+export const BEAT = {
+  plan: BEATS[0].start,
+  code: BEATS[1].start,
+  build: BEATS[2].start,
+  test: BEATS[3].start,
+  ship: BEATS[4].start,
+  live: BEATS[5].start,
+} as const;
 
 export const CODE_SNIPPET = `const app = await v3l.build({
   idea: "your product",
@@ -23,6 +34,33 @@ export const smooth = (v: number): number => {
   return t * t * (3 - 2 * t);
 };
 
+/** Ease out with a small overshoot, like GSAP `back.out(1.6)`. */
+export const backOut = (v: number, overshoot = 1.6): number => {
+  const t = clamp01(v) - 1;
+  return 1 + (overshoot + 1) * t * t * t + overshoot * t * t;
+};
+
+/** Ease out, like GSAP `expo.out`. */
+export const expoOut = (v: number): number => {
+  const t = clamp01(v);
+  return t === 1 ? 1 : 1 - 2 ** (-10 * t);
+};
+
+/** Progress of a window that starts at `start` and lasts `duration` seconds. */
+export const span = (t: number, start: number, duration: number): number =>
+  clamp01((t - start) / duration);
+
+/**
+ * Frame rate independent damping towards `target`.
+ * `lambda` is responsiveness: higher reaches the target faster.
+ */
+export const damp = (
+  current: number,
+  target: number,
+  lambda: number,
+  delta: number,
+): number => current + (target - current) * (1 - Math.exp(-lambda * delta));
+
 /** Index of the beat playing at story time `t` (seconds). */
 export function beatAt(t: number): number {
   let index = 0;
@@ -32,26 +70,28 @@ export function beatAt(t: number): number {
   return index;
 }
 
-/** Number of code characters visible at story time `t`. */
+/** Number of code characters visible at story time `t`. Typed during the Code beat. */
 export function typedChars(t: number, total = CODE_SNIPPET.length): number {
-  return Math.floor(total * clamp01(t / BEATS[1].start));
+  return Math.floor(total * span(t, BEAT.code, BEAT.build - BEAT.code - 0.3));
 }
 
 export type Vec3 = readonly [number, number, number];
 
-export interface CubeSlot {
-  /** Where the cube spawns, from the code editor. */
-  origin: Vec3;
-  /** Loose cloud position in the build beat. */
-  cloud: Vec3;
-  /** Pipe lane, 0 to 2. */
-  lane: number;
-  /** Final position and size inside the product UI. */
-  slot: Vec3;
-  slotScale: Vec3;
-}
+export type CubeKind = "glass" | "gloss" | "accent";
 
-export const CUBE_SIZE = 0.26;
+export interface CubeSpec {
+  kind: CubeKind;
+  /** Where the cube pops out of the code, floating above the chip. */
+  origin: Vec3;
+  /** Final cell in the cluster on the chip. */
+  slot: Vec3;
+  /** Story time the cube pops out of the code (Code beat). */
+  bornAt: number;
+  /** Story time the cube starts flying to its slot (Build beat). */
+  flyAt: number;
+  /** Decorative label shown on hover. */
+  label: string;
+}
 
 /** Deterministic pseudo random numbers, so the scene is identical on every load. */
 export function seeded(seed: number): () => number {
@@ -65,39 +105,82 @@ export function seeded(seed: number): () => number {
   };
 }
 
-interface Panel {
-  pos: Vec3;
-  scale: Vec3;
-}
+export const CUBE_SIZE = 0.5;
+export const CUBE_GAP = 0.07;
+/** Top surface of the chip, in world units. */
+export const CHIP_TOP = 0.3;
+/** Seconds a cube takes to fly from the cloud to its slot. */
+export const FLY_SECONDS = 0.75;
 
-/** The product UI the cubes unfold into: sidebar, top bar, three stat cards, bar chart. */
-const PANELS: readonly Panel[] = [
-  { pos: [-1.5, -0.1, 0], scale: [0.7, 3.0, 0.1] },
-  { pos: [0.6, 1.25, 0], scale: [3.3, 0.45, 0.1] },
-  { pos: [-0.45, 0.45, 0], scale: [1.0, 0.7, 0.1] },
-  { pos: [0.7, 0.45, 0], scale: [1.0, 0.7, 0.1] },
-  { pos: [1.85, 0.45, 0], scale: [1.0, 0.7, 0.1] },
-  { pos: [-0.45, -0.85, 0], scale: [0.35, 0.5, 0.1] },
-  { pos: [0.05, -0.75, 0], scale: [0.35, 0.7, 0.1] },
-  { pos: [0.55, -0.65, 0], scale: [0.35, 0.9, 0.1] },
-  { pos: [1.05, -0.8, 0], scale: [0.35, 0.6, 0.1] },
-  { pos: [1.55, -0.55, 0], scale: [0.35, 1.1, 0.1] },
-  { pos: [2.05, -0.7, 0], scale: [0.35, 0.8, 0.1] },
-  { pos: [2.55, -0.6, 0], scale: [0.35, 1.0, 0.1] },
-];
+const LABELS = ["Web", "Apps", "Domains"] as const;
 
-export function buildLayout(count: number): CubeSlot[] {
+/**
+ * The cube cluster that sits on the chip: 3 × 3 cells per layer.
+ * Cubes stack bottom layer first, so the tower visibly grows.
+ */
+export function buildCluster(layers: number): CubeSpec[] {
   const rand = seeded(20);
+  const pitch = CUBE_SIZE + CUBE_GAP;
+  const count = layers * 9;
+  const codeWindow = BEAT.build - BEAT.code - 0.4;
+  const buildWindow = BEAT.test - BEAT.build - FLY_SECONDS - 0.2;
   return Array.from({ length: count }, (_, i) => {
-    const panel = PANELS[i % PANELS.length];
-    const layer = Math.floor(i / PANELS.length);
-    const row = i % 7;
+    const layer = Math.floor(i / 9);
+    const cell = i % 9;
+    const x = (cell % 3) - 1;
+    const z = Math.floor(cell / 3) - 1;
+    const roll = rand();
+    const kind: CubeKind =
+      roll < 0.34 ? "glass" : roll < 0.8 ? "gloss" : "accent";
     return {
-      origin: [-3.2 + rand() * 1.2, 1.4 - row * 0.4, 0.2],
-      cloud: [-2 + rand() * 4, -1.2 + rand() * 2.8, -1 + rand() * 2],
-      lane: i % 3,
-      slot: [panel.pos[0], panel.pos[1], panel.pos[2] + layer * 0.14],
-      slotScale: panel.scale,
+      kind,
+      origin: [
+        0.2 + rand() * 1.5,
+        1.95 + rand() * 0.7,
+        -0.5 + rand() * 0.8,
+      ] as const,
+      slot: [
+        x * pitch,
+        CHIP_TOP + CUBE_SIZE / 2 + layer * pitch,
+        z * pitch,
+      ] as const,
+      bornAt: BEAT.code + 0.2 + (i / count) * codeWindow,
+      flyAt: BEAT.build + (i / count) * buildWindow,
+      label: LABELS[(x + 1 + layer) % LABELS.length],
     };
   });
+}
+
+/** Where the deploy crystal floats. */
+export const CRYSTAL_POS: Vec3 = [3.75, 1.3, 0.35];
+
+/** Control points for the three pipes from the chip's ports to the crystal pad. */
+export const PIPE_PATHS: readonly (readonly Vec3[])[] = [
+  [
+    [1.75, 0.18, -0.6],
+    [2.3, 0.18, -0.75],
+    [2.75, 0.95, -0.45],
+    [3.05, 0.45, -0.05],
+    [3.25, 0.1, 0.08],
+  ],
+  [
+    [1.75, 0.18, 0],
+    [2.4, 0.18, 0.02],
+    [2.85, 0.22, 0.3],
+    [3.18, 0.1, 0.35],
+  ],
+  [
+    [1.75, 0.18, 0.6],
+    [2.2, 0.18, 0.95],
+    [2.7, 0.5, 1.2],
+    [3.1, 0.3, 0.85],
+    [3.27, 0.1, 0.63],
+  ],
+];
+
+/** Height of the scanning ring during the Test beat, or `null` outside it. */
+export function scanHeight(t: number, top: number): number | null {
+  const p = span(t, BEAT.test, BEAT.ship - BEAT.test - 0.3);
+  if (p <= 0 || p >= 1) return null;
+  return CHIP_TOP + (top - CHIP_TOP + 0.4) * smooth(p);
 }

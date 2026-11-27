@@ -6,7 +6,16 @@ import {
   medianFps,
   type HeroEnv,
 } from "./hero-3d";
-import { BEATS, buildLayout, beatAt, typedChars } from "./hero-story";
+import {
+  BEAT,
+  BEATS,
+  FLY_SECONDS,
+  beatAt,
+  buildCluster,
+  damp,
+  scanHeight,
+  typedChars,
+} from "./hero-story";
 
 const desktop: HeroEnv = {
   reducedMotion: false,
@@ -88,22 +97,53 @@ describe("medianFps", () => {
 });
 
 describe("story", () => {
-  it("maps time to the five beats", () => {
-    expect(BEATS).toHaveLength(5);
-    expect([0, 3, 5, 7.5, 10.4].map(beatAt)).toEqual([0, 1, 2, 3, 4]);
+  it("maps time to the lifecycle beats", () => {
+    expect(BEATS.map((b) => b.label)).toEqual([
+      "Plan",
+      "Code",
+      "Build",
+      "Test",
+      "Ship",
+      "Live",
+    ]);
+    expect([0, 2, 4.5, 7, 9, 11.9].map(beatAt)).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
-  it("types the snippet over the first beat", () => {
-    expect(typedChars(0, 100)).toBe(0);
-    expect(typedChars(1.5, 100)).toBe(50);
-    expect(typedChars(9, 100)).toBe(100);
+  it("types the snippet during the Code beat", () => {
+    expect(typedChars(BEAT.code, 100)).toBe(0);
+    expect(typedChars(BEAT.plan, 100)).toBe(0);
+    expect(typedChars(BEAT.build, 100)).toBe(100);
   });
 
-  it("builds a stable layout for both quality tiers", () => {
-    for (const count of [12, 24]) {
-      const layout = buildLayout(count);
-      expect(layout).toHaveLength(count);
-      expect(buildLayout(count)).toEqual(layout);
+  it("builds a stable cluster for both quality tiers", () => {
+    for (const layers of [2, 3]) {
+      const cluster = buildCluster(layers);
+      expect(cluster).toHaveLength(layers * 9);
+      expect(buildCluster(layers)).toEqual(cluster);
+      const slots = new Set(cluster.map((c) => c.slot.join(",")));
+      expect(slots.size).toBe(cluster.length);
     }
+  });
+
+  it("lands every cube before the Test beat", () => {
+    for (const cube of buildCluster(3)) {
+      expect(cube.bornAt).toBeGreaterThanOrEqual(BEAT.code);
+      expect(cube.bornAt).toBeLessThan(BEAT.build);
+      expect(cube.flyAt + FLY_SECONDS).toBeLessThanOrEqual(BEAT.test);
+    }
+  });
+
+  it("only scans during the Test beat", () => {
+    expect(scanHeight(BEAT.build, 2)).toBeNull();
+    expect(scanHeight(BEAT.test + 0.5, 2)).not.toBeNull();
+    expect(scanHeight(BEAT.live, 2)).toBeNull();
+  });
+
+  it("damps towards the target independent of frame rate", () => {
+    let fast = 0;
+    for (let i = 0; i < 120; i += 1) fast = damp(fast, 1, 4, 1 / 120);
+    let slow = 0;
+    for (let i = 0; i < 30; i += 1) slow = damp(slow, 1, 4, 1 / 30);
+    expect(fast).toBeCloseTo(slow, 5);
   });
 });
