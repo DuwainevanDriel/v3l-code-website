@@ -16,13 +16,21 @@ Add two runtime dependencies and one type package, loaded only through `next/dyn
 | `@react-three/fiber` | Declarative renderer lifecycle in React: canvas, resize, frame loop, disposal on unmount. | MIT     |
 | `@types/three` (dev) | Types for `three`.                                                                        | MIT     |
 
-`@react-three/drei` is **not** added. Nothing in this scene needs its helpers, and it would add weight to the chunk. It can be added later if a feature needs it.
+**Update (VLC-21, hero polish):** the scene was rebuilt with real materials (physical glass and clearcoat, a studio environment map, bloom). Three more runtime dependencies were added for this, also only in the lazy chunk:
 
-All geometry is generated in code. There are no models, textures, HDRIs or fonts, so there is no asset licensing question. Colours are read from the existing CSS variables (`--accent`, `--accent-2`), so the theme is unchanged.
+| Package                       | Why                                                                                    | Licence |
+| ----------------------------- | -------------------------------------------------------------------------------------- | ------- |
+| `@react-three/drei`           | `Grid` for the blueprint floor. Other helpers can be used later.                       | MIT     |
+| `@react-three/postprocessing` | `EffectComposer`, `Bloom`, `Noise` and AgX `ToneMapping`.                              | MIT     |
+| `postprocessing`              | Peer dependency of the above; imported directly for `BlendFunction`/`ToneMappingMode`. | Zlib    |
+
+drei's `Environment` is deliberately **not** used: it bundles the HDR/EXR/gain-map loaders (about 25 KB gz) even when no file is loaded. `hero-3d/studio-env.tsx` builds the same studio lighting from a few glowing panels with `PMREMGenerator`.
+
+All geometry is generated in code. There are no models, textures, HDRIs or fonts, so there is no asset licensing question. Colours are read from the existing CSS variables (`--bg`, `--accent`, `--accent-2`), so the theme is unchanged.
 
 ## Consequences
 
-- Measured lazy chunk: about 245 KB gzipped (`three` dominates). Budget in the spec is 300 KB. It is **not** in the initial bundle for `/`, and it is requested only when the browser is idle and the hero canvas is at least 25% visible.
+- Measured lazy chunk: about 297 KB gzipped after VLC-21 (was 245 KB; `three` dominates, postprocessing adds about 50 KB). Budget in the spec is 300 KB, so further 3D features need to remove weight first. It is **not** in the initial bundle for `/`, and it is requested only when the browser is idle and the hero canvas is at least 25% visible.
 - Visitors on reduced motion, Save-Data, paused motion (footer toggle), no WebGL2, or low-memory touch devices get a static SVG poster and never download the chunk. Load failure, a 4 s timeout, WebGL context loss and a low frame rate all fall back to the poster silently.
 - `three` releases frequently. Versions are pinned exactly in `package.json` and upgraded deliberately.
 

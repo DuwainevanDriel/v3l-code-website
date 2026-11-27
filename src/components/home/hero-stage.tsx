@@ -1,197 +1,77 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
-  AdditiveBlending,
-  BoxGeometry,
-  CatmullRomCurve3,
-  Color,
-  EdgesGeometry,
-  LineBasicMaterial,
-  LineSegments,
-  Mesh,
-  MeshBasicMaterial,
-  SphereGeometry,
-  TubeGeometry,
-  Vector3,
-  type Group,
-} from "three";
-import {
+  BEAT,
   BEATS,
   CODE_SNIPPET,
-  CUBE_SIZE,
   STORY_SECONDS,
   beatAt,
-  buildLayout,
-  clamp01,
   smooth,
+  span,
   typedChars,
 } from "@/lib/hero-story";
 import { HERO_ART_LABEL } from "@/components/home/hero-poster";
 import { MIN_MEDIAN_FPS, medianFps, type HeroTier } from "@/lib/hero-3d";
+import { Chip } from "@/components/home/hero-3d/chip";
+import { Cluster } from "@/components/home/hero-3d/cluster";
+import { Crystal } from "@/components/home/hero-3d/crystal";
+import { Effects } from "@/components/home/hero-3d/effects";
+import { Pipes } from "@/components/home/hero-3d/pipes";
+import { Rig } from "@/components/home/hero-3d/rig";
+import type {
+  Palette,
+  StoryRef,
+  StoryState,
+} from "@/components/home/hero-3d/types";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-interface StoryState {
-  /** Seconds elapsed by autoplay or by jumping to a beat. */
-  auto: number;
-  /** Seconds implied by scroll position (desktop only). */
-  scroll: number;
-  pointerX: number;
-  pointerY: number;
-}
-
-interface Palette {
-  accent: string;
-  accent2: string;
-}
-
-const LANES = [-0.9, 0, 0.9] as const;
 const FPS_SAMPLE = 60;
+/** Skip the first frames: shader compilation makes them slow on every device. */
+const FPS_WARMUP = 20;
 
 function readPalette(): Palette {
   const style = getComputedStyle(document.documentElement);
   return {
-    accent: style.getPropertyValue("--accent").trim(),
-    accent2: style.getPropertyValue("--accent-2").trim(),
+    bg: style.getPropertyValue("--bg").trim() || "#0b0d12",
+    accent: style.getPropertyValue("--accent").trim() || "#c6ff3d",
+    accent2: style.getPropertyValue("--accent-2").trim() || "#7c5cff",
   };
 }
 
-function Scene({
-  count,
-  tilt,
+function advance(s: StoryState) {
+  s.t = Math.min(STORY_SECONDS, Math.max(s.auto, s.scroll));
+}
+
+/** Advances story time once per frame, before anything else reads it, and samples the frame rate. */
+function Clock({
   story,
-  palette,
   onBeat,
   onTime,
   onFps,
 }: {
-  count: number;
-  tilt: boolean;
-  story: { current: StoryState };
-  palette: Palette;
+  story: StoryRef;
   onBeat: (index: number) => void;
   onTime: (t: number) => void;
   onFps: (fps: number) => void;
 }) {
-  const group = useRef<Group>(null);
-  const layout = useMemo(() => buildLayout(count), [count]);
-
-  const assets = useMemo(() => {
-    const box = new BoxGeometry(1, 1, 1);
-    const edges = new EdgesGeometry(box);
-    const fill = new MeshBasicMaterial({
-      color: new Color(palette.accent2),
-      transparent: true,
-      opacity: 0.22,
-      depthWrite: false,
-    });
-    const line = new LineBasicMaterial({
-      color: new Color(palette.accent),
-      transparent: true,
-      opacity: 0.85,
-    });
-    const pipeMat = new MeshBasicMaterial({
-      color: new Color(palette.accent),
-      transparent: true,
-      opacity: 0.18,
-      blending: AdditiveBlending,
-      depthWrite: false,
-    });
-    const pulseMat = new MeshBasicMaterial({
-      color: new Color(palette.accent),
-      transparent: true,
-      opacity: 0.95,
-      blending: AdditiveBlending,
-    });
-    const pulseGeo = new SphereGeometry(0.07, 12, 12);
-    const curves = LANES.map(
-      (y) =>
-        new CatmullRomCurve3([
-          new Vector3(-3.4, y, 0),
-          new Vector3(-1.9, y, 0),
-          new Vector3(-1.2, y * 0.5, 0),
-          new Vector3(0.4, y * 0.5, 0),
-          new Vector3(1.6, y * 0.3, 0),
-        ]),
-    );
-    const tubes = curves.map((c) => new TubeGeometry(c, 40, 0.035, 6, false));
-    const plate = new BoxGeometry(6.4, 0.1, 2.6);
-    const plateEdges = new EdgesGeometry(plate);
-    const plateFill = new MeshBasicMaterial({
-      color: new Color(palette.accent2),
-      transparent: true,
-      opacity: 0.1,
-      depthWrite: false,
-    });
-    const cubes = Array.from({ length: count }, () => {
-      const mesh = new Mesh(box, fill);
-      mesh.add(new LineSegments(edges, line));
-      mesh.visible = false;
-      return mesh;
-    });
-    const pipes = tubes.map((geometry) => new Mesh(geometry, pipeMat));
-    const pulses = LANES.map(() => new Mesh(pulseGeo, pulseMat));
-    const plateMesh = new Mesh(plate, plateFill);
-    plateMesh.add(new LineSegments(plateEdges, line));
-    plateMesh.position.set(0, -1.55, 0);
-    return {
-      box,
-      edges,
-      fill,
-      line,
-      pipeMat,
-      pulseMat,
-      pulseGeo,
-      curves,
-      tubes,
-      plate,
-      plateEdges,
-      plateFill,
-      cubes,
-      pipes,
-      pulses,
-      plateMesh,
-    };
-  }, [count, palette]);
-
-  useEffect(
-    () => () => {
-      assets.box.dispose();
-      assets.edges.dispose();
-      assets.fill.dispose();
-      assets.line.dispose();
-      assets.pipeMat.dispose();
-      assets.pulseMat.dispose();
-      assets.pulseGeo.dispose();
-      assets.tubes.forEach((t) => t.dispose());
-      assets.plate.dispose();
-      assets.plateEdges.dispose();
-      assets.plateFill.dispose();
-    },
-    [assets],
-  );
-
-  const scratch = useMemo(() => new Vector3(), []);
-  const scratchEnd = useMemo(() => new Vector3(), []);
   const lastBeat = useRef(-1);
   const deltas = useRef<number[]>([]);
+  const frames = useRef(0);
   const sampled = useRef(false);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     const s = story.current;
-    const t = Math.min(STORY_SECONDS, Math.max(s.auto, s.scroll));
-    const g = group.current;
-    if (!g) return;
-    g.scale.setScalar(
-      Math.min(1.3, state.viewport.width / 7.5, state.viewport.height / 4.6),
-    );
+    advance(s);
 
     if (!sampled.current) {
-      deltas.current.push(delta);
+      frames.current += 1;
+      if (frames.current > FPS_WARMUP) deltas.current.push(delta);
       if (deltas.current.length >= FPS_SAMPLE) {
         sampled.current = true;
         const fps = medianFps(deltas.current);
@@ -199,92 +79,15 @@ function Scene({
       }
     }
 
-    const beat = beatAt(t);
+    const beat = beatAt(s.t);
     if (beat !== lastBeat.current) {
       lastBeat.current = beat;
       onBeat(beat);
     }
-    onTime(t);
+    onTime(s.t);
+  }, -1);
 
-    const elapsed = state.clock.elapsedTime;
-    const live = t >= BEATS[4].start;
-    const strength = !tilt ? 0 : live ? 1 : t >= BEATS[2].start ? 0.3 : 0;
-    g.rotation.y += (s.pointerX * 0.105 * strength - g.rotation.y) * 0.08;
-    g.rotation.x +=
-      (-0.3 + s.pointerY * -0.07 * strength - g.rotation.x) * 0.08;
-    g.position.y = live ? Math.sin(elapsed * 1.05) * 0.04 : 0;
-
-    const shipStart = BEATS[3].start;
-    assets.cubes.forEach((cube, i) => {
-      const spec = layout[i];
-      const stagger = i * 0.04;
-      const born = smooth((t - BEATS[1].start - stagger) / 0.6);
-      cube.visible = born > 0;
-      if (!cube.visible) return;
-
-      const settle = smooth((t - BEATS[1].start - stagger) / 1.4);
-      const flow = clamp01((t - BEATS[2].start - i * 0.03) / 1.8);
-      const ship = smooth((t - shipStart - i * 0.04) / 1.6);
-      const curve = assets.curves[spec.lane];
-
-      scratch.set(
-        spec.origin[0] + (spec.cloud[0] - spec.origin[0]) * settle,
-        spec.origin[1] + (spec.cloud[1] - spec.origin[1]) * settle,
-        spec.origin[2] + (spec.cloud[2] - spec.origin[2]) * settle,
-      );
-      if (flow > 0) {
-        const lead = smooth(flow / 0.25);
-        curve.getPointAt(0, scratchEnd);
-        scratch.lerp(scratchEnd, lead);
-        if (flow > 0.25) curve.getPointAt((flow - 0.25) / 0.75, scratch);
-      }
-      if (ship > 0) {
-        curve.getPointAt(1, scratchEnd);
-        scratch.copy(scratchEnd);
-        scratch.x += (spec.slot[0] - scratchEnd.x) * ship;
-        scratch.y += (spec.slot[1] - scratchEnd.y) * ship;
-        scratch.z += (spec.slot[2] - scratchEnd.z) * ship;
-      }
-      cube.position.copy(scratch);
-
-      const spin = (1 - smooth((t - BEATS[2].start) / 1.2)) * (1 - ship);
-      cube.rotation.set(elapsed * 0.6 * spin + i, elapsed * 0.8 * spin, 0);
-      if (spin < 0.001) cube.rotation.set(0, 0, 0);
-      const size = CUBE_SIZE * born;
-      cube.scale.set(
-        size + (spec.slotScale[0] - size) * ship,
-        size + (spec.slotScale[1] - size) * ship,
-        size + (spec.slotScale[2] - size) * ship,
-      );
-    });
-
-    const pipesOn = smooth((t - BEATS[2].start + 0.4) / 0.6);
-    assets.pipes.forEach((pipe) => {
-      pipe.visible = pipesOn > 0.05;
-    });
-    assets.pulses.forEach((pulse, lane) => {
-      pulse.visible = pipesOn > 0;
-      assets.curves[lane].getPointAt(
-        (elapsed * 0.33 + lane * 0.31) % 1,
-        pulse.position,
-      );
-    });
-  });
-
-  return (
-    <group ref={group} rotation={[-0.3, 0, 0]}>
-      <primitive object={assets.plateMesh} />
-      {assets.pipes.map((pipe, lane) => (
-        <primitive key={lane} object={pipe} />
-      ))}
-      {assets.pulses.map((pulse, lane) => (
-        <primitive key={lane} object={pulse} />
-      ))}
-      {assets.cubes.map((cube, i) => (
-        <primitive key={i} object={cube} />
-      ))}
-    </group>
-  );
+  return null;
 }
 
 export interface HeroStageProps {
@@ -306,15 +109,25 @@ export default function HeroStage({
   const story = useRef<StoryState>({
     auto: 0,
     scroll: 0,
+    t: 0,
     pointerX: 0,
     pointerY: 0,
   });
   const autoplay = useRef<gsap.core.Tween | null>(null);
   const [beat, setBeat] = useState(0);
+  const [label, setLabel] = useState<string | null>(null);
   const [active, setActive] = useState(true);
   const [palette] = useState(readPalette);
   const full = tier === "full";
   const lastChars = useRef(-1);
+  const alive = useRef(false);
+
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const el = root.current;
@@ -324,9 +137,7 @@ export default function HeroStage({
       { threshold: [0, 0.1, 0.5] },
     );
     observer.observe(el);
-    const onVisibility = () => {
-      if (document.hidden) setActive(false);
-    };
+    const onVisibility = () => setActive(!document.hidden);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       observer.disconnect();
@@ -351,23 +162,40 @@ export default function HeroStage({
     });
   };
 
-  useEffect(() => {
-    const el = root.current;
-    if (!el) return undefined;
-    const mm = gsap.matchMedia();
-    mm.add("(min-width: 1024px)", () => {
-      const trigger = ScrollTrigger.create({
-        trigger: el,
-        start: "top 85%",
-        end: "bottom 25%",
-        onUpdate: (self) => {
-          story.current.scroll = self.progress * STORY_SECONDS;
+  // Desktop: scrolling past the hero scrubs the story ahead with inertia and drifts the scene out.
+  useGSAP(
+    () => {
+      const el = root.current;
+      const section = el?.closest("section");
+      if (!el || !section) return;
+      const mm = gsap.matchMedia();
+      mm.add(
+        "(min-width: 1024px) and (prefers-reduced-motion: no-preference)",
+        () => {
+          // No pin: the page scrolls normally and the scroll only pushes the story ahead.
+          const range = {
+            trigger: section,
+            start: "top top+=64",
+            end: "bottom top",
+          };
+          gsap.to(story.current, {
+            scroll: STORY_SECONDS,
+            ease: "none",
+            scrollTrigger: { ...range, scrub: 1 },
+          });
+          gsap.to(el, {
+            yPercent: -8,
+            scale: 0.96,
+            opacity: 0.5,
+            ease: "none",
+            scrollTrigger: { ...range, scrub: true },
+          });
         },
-      });
-      return () => trigger.kill();
-    });
-    return () => mm.revert();
-  }, []);
+      );
+      return () => mm.revert();
+    },
+    { scope: root },
+  );
 
   useEffect(() => {
     if (!full) return undefined;
@@ -383,7 +211,7 @@ export default function HeroStage({
       gsap.to(story.current, {
         pointerX: 0,
         pointerY: 0,
-        duration: 0.6,
+        duration: 0.8,
         ease: "power2.out",
       });
     };
@@ -405,85 +233,153 @@ export default function HeroStage({
       pre.textContent =
         CODE_SNIPPET.slice(0, chars) + (chars < CODE_SNIPPET.length ? "▍" : "");
     }
-    panel.style.opacity = String(1 - smooth((t - BEATS[1].start) / 0.6));
+    const show = smooth(span(t, BEAT.code - 0.4, 0.5));
+    const hide = smooth(span(t, BEAT.build + 0.3, 0.7));
+    const o = show * (1 - hide);
+    panel.style.opacity = String(o);
+    panel.style.transform = `translateY(${(1 - show) * 12 - hide * 16}px) scale(${0.97 + 0.03 * show})`;
   };
 
   const jumpTo = (index: number) => {
     autoplay.current?.kill();
-    autoplay.current = null;
     const s = story.current;
-    gsap.to(s, {
-      auto: BEATS[index].start + 0.01,
-      duration: 0.8,
+    const start = BEATS[index].start + 0.01;
+    autoplay.current = gsap.to(s, {
+      auto: start,
+      scroll: Math.min(s.scroll, start),
+      duration: 0.9,
       ease: "power2.inOut",
+      onComplete: () => {
+        autoplay.current = gsap.to(s, {
+          auto: STORY_SECONDS,
+          duration: Math.max(0.01, STORY_SECONDS - start),
+          ease: "none",
+        });
+      },
     });
   };
 
   const replayOrSkip = () => {
     const s = story.current;
     autoplay.current?.kill();
-    if (s.auto >= BEATS[4].start) {
-      gsap.to(s, { auto: 0, scroll: 0, duration: 0.6, ease: "power2.inOut" });
+    if (s.t >= BEAT.live) {
+      autoplay.current = gsap.to(s, {
+        auto: 0,
+        scroll: 0,
+        duration: 0.7,
+        ease: "power2.inOut",
+        onComplete: startAutoplay,
+      });
       return;
     }
-    gsap.to(s, { auto: BEATS[4].start, duration: 0.8, ease: "power2.inOut" });
+    autoplay.current = gsap.to(s, {
+      auto: BEAT.live,
+      duration: 0.9,
+      ease: "power2.inOut",
+    });
   };
 
   return (
     <div
       ref={root}
-      className="absolute inset-0"
+      className="absolute inset-0 will-change-transform"
       role="img"
       aria-label={`Animation: ${HERO_ART_LABEL}`}
     >
       <Canvas
-        dpr={[1, full ? 1.75 : 1.5]}
-        camera={{ position: [0, 0, 9], fov: 40 }}
+        dpr={[1, full ? 1.75 : 1.4]}
+        camera={{ position: [8, 7, 9], fov: 30, near: 0.1, far: 60 }}
         frameloop={active ? "always" : "never"}
         gl={{
-          antialias: true,
+          antialias: false,
           alpha: true,
           powerPreference: "high-performance",
+          stencil: false,
         }}
         onCreated={({ gl }) => {
-          gl.domElement.addEventListener("webglcontextlost", onFail, {
-            once: true,
-          });
+          const canvas = gl.domElement;
+          // R3F forces a context loss itself when the canvas unmounts; only a loss
+          // on a mounted canvas that is still on the page is a real failure.
+          canvas.addEventListener(
+            "webglcontextlost",
+            () => {
+              window.setTimeout(() => {
+                if (alive.current && canvas.isConnected) onFail();
+              }, 0);
+            },
+            { once: true },
+          );
           startAutoplay();
           onReady();
         }}
         onClick={replayOrSkip}
+        style={{
+          // Straight fades on the outer few percent only, so nothing ends on a hard edge.
+          maskImage:
+            "linear-gradient(to right, transparent, #000 5%, #000 95%, transparent), linear-gradient(to bottom, transparent, #000 5%, #000 92%, transparent)",
+          maskComposite: "intersect",
+        }}
       >
-        <Scene
-          count={full ? 24 : 12}
-          tilt={full}
+        <Clock
           story={story}
-          palette={palette}
           onBeat={setBeat}
           onTime={writeFrame}
           onFps={onDowngrade}
         />
+        <Rig story={story} palette={palette} tilt={full} />
+        <Chip story={story} palette={palette} />
+        <Pipes story={story} palette={palette} />
+        <Cluster
+          story={story}
+          palette={palette}
+          layers={full ? 3 : 2}
+          interactive={full}
+          onLabel={setLabel}
+        />
+        <Crystal
+          story={story}
+          palette={palette}
+          interactive={full}
+          onLabel={setLabel}
+        />
+        <Effects full={full} palette={palette} />
       </Canvas>
       <div
         ref={editor}
         aria-hidden="true"
-        className="border-border bg-surface/80 pointer-events-none absolute top-[8%] left-[4%] w-[52%] max-w-sm rounded-lg border p-4 backdrop-blur-sm"
+        className="border-border/80 bg-surface/70 pointer-events-none absolute top-[7%] left-[4%] w-[46%] max-w-xs rounded-xl border p-4 opacity-0 shadow-2xl shadow-black/50 backdrop-blur-md lg:top-[12%] lg:left-[36%] lg:w-[26%]"
       >
+        <div className="mb-3 flex gap-1.5">
+          <span className="bg-border size-2 rounded-full" />
+          <span className="bg-border size-2 rounded-full" />
+          <span className="bg-accent size-2 rounded-full" />
+        </div>
         <pre
           ref={code}
           className="text-text font-mono text-[0.6rem] leading-relaxed whitespace-pre-wrap sm:text-xs"
         />
       </div>
-      <ol className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 pb-2 sm:gap-3">
+      <p
+        aria-hidden="true"
+        className="border-border bg-surface/80 text-accent pointer-events-none absolute top-[7%] right-[6%] rounded-full border px-3 py-1 font-mono text-xs backdrop-blur-sm transition-opacity duration-200"
+        style={{ opacity: label ? 1 : 0 }}
+      >
+        {label ?? ""}
+      </p>
+      <ol className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-0.5 pb-2 sm:gap-2">
         {BEATS.map((b, i) => (
           <li key={b.key} className="pointer-events-auto">
             <button
               type="button"
               onClick={() => jumpTo(i)}
               aria-current={beat === i ? "step" : undefined}
-              className="text-muted aria-[current=step]:text-accent min-h-11 min-w-11 px-2 font-mono text-[0.65rem] sm:text-xs"
+              aria-label={`${b.num} ${b.label}`.trim()}
+              className="text-muted hover:text-text aria-[current=step]:text-accent min-h-11 min-w-11 px-1.5 font-mono text-[0.65rem] transition-colors sm:px-2 sm:text-xs"
             >
-              {b.label}
+              {b.num ? <span className="opacity-60">{b.num} </span> : null}
+              <span className={b.num ? "hidden sm:inline" : undefined}>
+                {b.label}
+              </span>
             </button>
           </li>
         ))}

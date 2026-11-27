@@ -3,17 +3,28 @@ const stack = [
   "React",
   "Next.js",
   "React Native",
+  "Hosting",
   ".NET",
   "AWS",
   "PostgreSQL",
   "Vercel",
+  "Domain",
+  "Python",
+  "Azure",
+  "SQL",
+  "NeonDB",
+  "Docker",
+  "Tailwind",
 ];
+
+/** Copies of the list in the track. Enough that one copy plus the rest covers any screen width. */
+const COPIES = 6;
 
 function Row({ clone = false }: { clone?: boolean }) {
   return (
     <ul
       aria-hidden={clone ? "true" : undefined}
-      className={`flex shrink-0 gap-12 pr-12 ${clone ? "marquee-clone" : ""}`}
+      className={`flex shrink-0 gap-20 pr-20 ${clone ? "marquee-clone" : ""}`}
     >
       {stack.map((name) => (
         <li
@@ -35,8 +46,9 @@ export function Marquee() {
       className="marquee border-border overflow-hidden border-y py-8"
     >
       <div className="marquee-track flex">
-        <Row />
-        <Row clone />
+        {Array.from({ length: COPIES }, (_, i) => (
+          <Row key={i} clone={i > 0} />
+        ))}
       </div>
     </section>
   );

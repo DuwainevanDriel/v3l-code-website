@@ -34,7 +34,8 @@ class StageBoundary extends Component<
 }
 
 /**
- * Poster first, 3D second. The poster is server-rendered inside a box with a fixed
+ * The poster is shown only to visitors who do not get the 3D scene (and without JS),
+ * so a 3D visitor never sees a static image swap out. It is server-rendered inside a box with a fixed
  * aspect ratio (no layout shift). The 3D chunk is requested only when the browser is
  * idle, the box is visible and the visitor's device and settings allow it.
  */
@@ -43,10 +44,14 @@ export function HeroScene() {
   const [tier, setTier] = useState<HeroTier>("poster");
   const [load, setLoad] = useState(false);
   const [ready, setReady] = useState(false);
+  /** False until the client has picked a tier, so a 3D visitor never sees the poster first. */
+  const [decided, setDecided] = useState(false);
 
   useEffect(() => {
-    const evaluate = () =>
+    const evaluate = () => {
       setTier(chooseHeroTier(readHeroEnv(window, motionPaused())));
+      setDecided(true);
+    };
     evaluate();
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     mq.addEventListener("change", evaluate);
@@ -106,11 +111,15 @@ export function HeroScene() {
     <div
       ref={box}
       data-hero-scene={tier}
-      className="border-border bg-surface relative mx-auto mt-12 aspect-[4/5] max-h-[60svh] w-full overflow-hidden rounded-lg border sm:aspect-[16/10] sm:max-h-none lg:mt-16 lg:aspect-[21/9]"
+      className="relative mx-auto mt-12 aspect-4/5 max-h-[60svh] w-full sm:aspect-16/10 sm:max-h-none lg:mt-0 lg:aspect-auto lg:h-full lg:max-h-none"
     >
+      <noscript>
+        <style>{"[data-hero-poster]{opacity:1!important}"}</style>
+      </noscript>
       <div
-        className="absolute inset-0 transition-opacity duration-300"
-        style={{ opacity: ready && tier !== "poster" ? 0 : 1 }}
+        data-hero-poster
+        className="absolute inset-0 transition-opacity duration-500"
+        style={{ opacity: decided && tier === "poster" ? 1 : 0 }}
       >
         <HeroPoster />
       </div>
